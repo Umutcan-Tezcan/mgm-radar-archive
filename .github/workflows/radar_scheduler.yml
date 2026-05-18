@@ -49,10 +49,10 @@ jobs:
       - name: Radar görüntüsünü çek ve Drive'a yükle
         env:
           # ── Zorunlu Secrets ──────────────────────────────────────────────
-          # DRIVE_CREDS       : Service Account JSON'unun TAM içeriği
-          # DRIVE_FOLDER_ID   : Yüklenecek Drive klasörünün ID'si
+          # DRIVE_TOKEN       : token.json dosyasinin TAM icerigi
+          # DRIVE_FOLDER_ID   : Yuklenecek Drive klasorunun ID'si
           # ─────────────────────────────────────────────────────────────────
-          DRIVE_CREDS: ${{ secrets.DRIVE_CREDS }}
+          DRIVE_TOKEN: ${{ secrets.DRIVE_TOKEN }}
           DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
 
           # ── Opsiyonel (workflow_dispatch'ten veya sabit) ──────────────────

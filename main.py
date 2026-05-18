@@ -1,14 +1,14 @@
 """
 MGM Radar Image Fetcher & Google Drive Uploader
 ================================================
-Her çalıştığında MGM'nin güncel radar görüntüsünü çeker ve
-belirlenen Google Drive klasörüne yükler.
+Her calistiginda MGM'nin guncel radar goruntusunu ceker ve
+beligrlenen Google Drive klasorune yukler.
 
-Ortam Değişkenleri (GitHub Secrets):
-  DRIVE_CREDS        : Google Service Account JSON içeriği (tek satır string)
-  DRIVE_FOLDER_ID    : Yüklenecek Drive klasörünün ID'si
-  RADAR_STATION      : (Opsiyonel) İstasyon kodu, varsayılan: ist
-  RADAR_PRODUCT      : (Opsiyonel) Ürün kodu, varsayılan: ppi
+Ortam Degiskenleri (GitHub Secrets):
+  DRIVE_TOKEN        : OAuth2 token.json dosyasinin tam icerigi
+  DRIVE_FOLDER_ID    : Yuklenecek Drive klasorunun ID'si
+  RADAR_STATION      : (Opsiyonel) Istasyon kodu, varsayilan: ist
+  RADAR_PRODUCT      : (Opsiyonel) Urun kodu, varsayilan: ppi
 """
 
 import os
@@ -19,7 +19,7 @@ import tempfile
 from datetime import datetime, timezone, timedelta
 
 import requests
-from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
@@ -72,19 +72,24 @@ def get_env(key: str, default: str | None = None, required: bool = True) -> str:
     return value  # type: ignore[return-value]
 
 
-def build_drive_service(creds_json_str: str):
-    """Service Account JSON stringinden Drive API istemcisi oluşturur."""
+def build_drive_service(token_json_str: str):
+    """OAuth2 token JSON stringinden Drive API istemcisi olusturur."""
     try:
-        creds_info = json.loads(creds_json_str)
+        token_data = json.loads(token_json_str)
     except json.JSONDecodeError as exc:
-        log.error("DRIVE_CREDS geçerli bir JSON değil: %s", exc)
+        log.error("DRIVE_TOKEN gecerli bir JSON degil: %s", exc)
         sys.exit(1)
 
-    credentials = service_account.Credentials.from_service_account_info(
-        creds_info, scopes=DRIVE_SCOPES
+    credentials = Credentials(
+        token=token_data.get("token"),
+        refresh_token=token_data["refresh_token"],
+        token_uri=token_data["token_uri"],
+        client_id=token_data["client_id"],
+        client_secret=token_data["client_secret"],
+        scopes=token_data.get("scopes", DRIVE_SCOPES),
     )
     service = build("drive", "v3", credentials=credentials, cache_discovery=False)
-    log.info("Google Drive API bağlantısı kuruldu.")
+    log.info("Google Drive API baglantisi kuruldu (OAuth2).")
     return service
 
 
@@ -155,23 +160,14 @@ def upload_to_drive(service, filepath: str, filename: str, folder_id: str) -> st
         # Mevcut dosyayı güncelle
         file_id = existing_files[0]["id"]
         log.info("Mevcut dosya güncelleniyor (ID: %s)…", file_id)
-        service.files().update(
-            fileId=file_id,
-            media_body=media,
-            supportsAllDrives=True,
-        ).execute()
+        service.files().update(fileId=file_id, media_body=media).execute()
     else:
         # Yeni dosya oluştur
         file_metadata = {"name": filename, "parents": [folder_id]}
         log.info("Yeni dosya oluşturuluyor: %s", filename)
         result = (
             service.files()
-            .create(
-                body=file_metadata,
-                media_body=media,
-                fields="id",
-                supportsAllDrives=True,
-            )
+            .create(body=file_metadata, media_body=media, fields="id")
             .execute()
         )
         file_id = result.get("id")
@@ -186,20 +182,15 @@ def upload_to_drive(service, filepath: str, filename: str, folder_id: str) -> st
 
 def main() -> None:
     # -- Ortam değişkenleri --------------------------------------------------
-    drive_creds = get_env("DRIVE_CREDS")
+    drive_token = get_env("DRIVE_TOKEN")
     folder_id   = get_env("DRIVE_FOLDER_ID")
     station     = get_env("RADAR_STATION", default="ist", required=False)
     product     = get_env("RADAR_PRODUCT", default="ppi", required=False)
 
-    # -- Zaman damgalı dosya adı (Türkiye saati UTC+3) ----------------------
-    now_utc = datetime.now(timezone.utc)
-    turkey_tz = timezone(timedelta(hours=3))
-    now_tr = now_utc.astimezone(turkey_tz)
-
-    # Saati 15'in katına yuvarla: 17.07 → 17.00, 17.18 → 17.15
-    rounded_minute = (now_tr.minute // 15) * 15
-    filename = now_tr.strftime("%Y-%m-%d") + f"_{now_tr.hour:02d}.{rounded_minute:02d}_{station}_{product}_radar.jpg"
-    log.info("Oturum başladı | Türkiye saati: %s", now_tr.strftime("%Y-%m-%d %H:%M"))
+    # -- Zaman damgalı dosya adı ---------------------------------------------
+    now_utc  = datetime.now(timezone.utc)
+    filename = now_utc.strftime("%Y-%m-%d_%H-%M") + f"_{station}_{product}_radar.jpg"
+    log.info("Oturum başladı | %s", now_utc.isoformat())
 
     # -- Radar görüntüsü indir ------------------------------------------------
     image_data = fetch_radar_image(station, product)
@@ -209,7 +200,7 @@ def main() -> None:
 
     # -- Google Drive'a yükle -------------------------------------------------
     try:
-        drive_service = build_drive_service(drive_creds)
+        drive_service = build_drive_service(drive_token)
         upload_to_drive(drive_service, tmp_path, filename, folder_id)
     finally:
         # Her koşulda geçici dosyayı temizle
