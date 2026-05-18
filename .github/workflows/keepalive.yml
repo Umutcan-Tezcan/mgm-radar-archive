@@ -1,0 +1,29 @@
+name: Keepalive
+
+on:
+  schedule:
+    - cron: "0 12 1 * *"   # Her ayın 1'inde saat 12:00 UTC'de çalışır
+  workflow_dispatch:        # Manuel de tetiklenebilir
+
+jobs:
+  keepalive:
+    name: Repo aktif tut
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Repoyu klonla
+        uses: actions/checkout@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+      - name: Keepalive commit at
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # .keepalive dosyasini guncelle
+          date -u > .keepalive
+          git add .keepalive
+          git diff --staged --quiet || git commit -m "chore: keepalive [skip ci]"
+          git push
