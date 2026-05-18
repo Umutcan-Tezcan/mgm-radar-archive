@@ -155,14 +155,23 @@ def upload_to_drive(service, filepath: str, filename: str, folder_id: str) -> st
         # Mevcut dosyayı güncelle
         file_id = existing_files[0]["id"]
         log.info("Mevcut dosya güncelleniyor (ID: %s)…", file_id)
-        service.files().update(fileId=file_id, media_body=media).execute()
+        service.files().update(
+            fileId=file_id,
+            media_body=media,
+            supportsAllDrives=True,
+        ).execute()
     else:
         # Yeni dosya oluştur
         file_metadata = {"name": filename, "parents": [folder_id]}
         log.info("Yeni dosya oluşturuluyor: %s", filename)
         result = (
             service.files()
-            .create(body=file_metadata, media_body=media, fields="id")
+            .create(
+                body=file_metadata,
+                media_body=media,
+                fields="id",
+                supportsAllDrives=True,
+            )
             .execute()
         )
         file_id = result.get("id")
