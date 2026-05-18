@@ -52,7 +52,7 @@ jobs:
           # DRIVE_TOKEN       : token.json dosyasinin TAM icerigi
           # DRIVE_FOLDER_ID   : Yuklenecek Drive klasorunun ID'si
           # ─────────────────────────────────────────────────────────────────
-          DRIVE_TOKEN: ${{ secrets.DRIVE_TOKEN }}
+          DRIVE_TOKEN: ${{ secrets.DRIVE_CREDS }}
           DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
 
           # ── Opsiyonel (workflow_dispatch'ten veya sabit) ──────────────────
