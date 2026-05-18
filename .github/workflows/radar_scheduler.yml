@@ -1,0 +1,60 @@
+name: MGM Radar Fetcher
+
+# ─────────────────────────────────────────────────────────────
+# Her 15 dakikada bir tetiklenir (UTC cinsinden).
+# Not: GitHub Actions'ta cron minimum ~1 dakika gecikmeyle
+# çalışabilir; bu proje için sorun değil.
+# ─────────────────────────────────────────────────────────────
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # Her 15 dakikada bir
+
+  # Elle de tetikleyebilmek için (test / debug amacıyla)
+  workflow_dispatch:
+    inputs:
+      station:
+        description: "Radar istasyonu (ör: ist, ank, izm)"
+        required: false
+        default: "ist"
+      product:
+        description: "Ürün kodu (ör: ppi, max, vil)"
+        required: false
+        default: "ppi"
+
+jobs:
+  fetch-and-upload:
+    name: Radar Görüntüsü Çek ve Drive'a Yükle
+    runs-on: ubuntu-latest
+    timeout-minutes: 5          # İş takılırsa 5 dakika sonra iptal et
+
+    steps:
+      # 1. Kodu çek
+      - name: Repoyu klonla
+        uses: actions/checkout@v4
+
+      # 2. Python kur
+      - name: Python 3.12 kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"           # requirements.txt değişmediğinde hızlı kurulum
+
+      # 3. Bağımlılıkları yükle
+      - name: Bağımlılıkları yükle
+        run: pip install -r requirements.txt
+
+      # 4. Ana scripti çalıştır
+      - name: Radar görüntüsünü çek ve Drive'a yükle
+        env:
+          # ── Zorunlu Secrets ──────────────────────────────────────────────
+          # DRIVE_CREDS       : Service Account JSON'unun TAM içeriği
+          # DRIVE_FOLDER_ID   : Yüklenecek Drive klasörünün ID'si
+          # ─────────────────────────────────────────────────────────────────
+          DRIVE_CREDS: ${{ secrets.DRIVE_CREDS }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+
+          # ── Opsiyonel (workflow_dispatch'ten veya sabit) ──────────────────
+          RADAR_STATION: ${{ github.event.inputs.station || 'ist' }}
+          RADAR_PRODUCT: ${{ github.event.inputs.product || 'ppi' }}
+
+        run: python main.py
