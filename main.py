@@ -16,7 +16,7 @@ import sys
 import json
 import logging
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import requests
 from google.oauth2 import service_account
@@ -182,10 +182,15 @@ def main() -> None:
     station     = get_env("RADAR_STATION", default="ist", required=False)
     product     = get_env("RADAR_PRODUCT", default="ppi", required=False)
 
-    # -- Zaman damgalı dosya adı ---------------------------------------------
-    now_utc  = datetime.now(timezone.utc)
-    filename = now_utc.strftime("%Y-%m-%d_%H-%M") + f"_{station}_{product}_radar.jpg"
-    log.info("Oturum başladı | %s", now_utc.isoformat())
+    # -- Zaman damgalı dosya adı (Türkiye saati UTC+3) ----------------------
+    now_utc = datetime.now(timezone.utc)
+    turkey_tz = timezone(timedelta(hours=3))
+    now_tr = now_utc.astimezone(turkey_tz)
+
+    # Saati 15'in katına yuvarla: 17.07 → 17.00, 17.18 → 17.15
+    rounded_minute = (now_tr.minute // 15) * 15
+    filename = now_tr.strftime("%Y-%m-%d") + f"_{now_tr.hour:02d}.{rounded_minute:02d}_{station}_{product}_radar.jpg"
+    log.info("Oturum başladı | Türkiye saati: %s", now_tr.strftime("%Y-%m-%d %H:%M"))
 
     # -- Radar görüntüsü indir ------------------------------------------------
     image_data = fetch_radar_image(station, product)
