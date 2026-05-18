@@ -26,6 +26,8 @@ jobs:
     name: Radar Görüntüsü Çek ve Drive'a Yükle
     runs-on: ubuntu-latest
     timeout-minutes: 5          # İş takılırsa 5 dakika sonra iptal et
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Node.js 24 uyumluluğu
 
     steps:
       # 1. Kodu çek
