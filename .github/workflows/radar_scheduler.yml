@@ -8,7 +8,7 @@ name: MGM Radar Fetcher
 # ─────────────────────────────────────────────────────────────
 on:
   schedule:
-    - cron: "*/15 * * * *"   # Her 15 dakikada bir
+    - cron: "0,15,30,45 * * * *"   # Her saatin 0., 15., 30., 45. dakikalarinda
 
   # Elle de tetikleyebilmek için (test / debug amacıyla)
   workflow_dispatch:
