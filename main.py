@@ -82,10 +82,10 @@ def build_drive_service(token_json_str: str):
 
     credentials = Credentials(
         token=token_data.get("token"),
-        refresh_token=token_data["refresh_token"],
-        token_uri=token_data["token_uri"],
-        client_id=token_data["client_id"],
-        client_secret=token_data["client_secret"],
+        refresh_token=token_data.get("refresh_token"),
+        token_uri=token_data.get("token_uri"),
+        client_id=token_data.get("client_id"),
+        client_secret=token_data.get("client_secret"),
         scopes=token_data.get("scopes", DRIVE_SCOPES),
     )
     service = build("drive", "v3", credentials=credentials, cache_discovery=False)
