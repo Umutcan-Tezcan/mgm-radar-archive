@@ -4,6 +4,7 @@ name: MGM Radar Fetcher
 # Her 15 dakikada bir tetiklenir (UTC cinsinden).
 # Not: GitHub Actions'ta cron minimum ~1 dakika gecikmeyle
 # çalışabilir; bu proje için sorun değil.
+# Guncelleme: Cron tetikleyicisini zorlamak icin eklendi.
 # ─────────────────────────────────────────────────────────────
 on:
   schedule:
