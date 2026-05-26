@@ -43,7 +43,7 @@ MGM_RADAR_URL_TEMPLATE = (
     "https://mgm.gov.tr/FTPDATA/uzal/radar/{station}/{station}{product}15.jpg"
 )
 
-DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.file"]
+DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]
 
 # MGM sunucusunun bot engellemesini atlatmak için gerçekçi bir User-Agent
 HEADERS = {
